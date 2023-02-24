@@ -48,5 +48,5 @@ public class TCPClient {
             socket.close();
             return out.toByteArray();
         }
-        }
     }
+}

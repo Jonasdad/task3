@@ -1,7 +1,8 @@
 import java.net.*;
 import java.io.*;
 import java.util.*;
-
+//http://localhost:8080/ask?hostname=time.nist.gov&limit=1200&port=13d
+//httq://localhost:8080/ask?hostname=java.lab.ssvl.kth.se&shutdown=true&limit=1200&port=13&string=hejhejhejhej
 public class HTTPAsk {
     public static void main(String[] args) throws IOException {
         // Your code here
@@ -13,67 +14,66 @@ public class HTTPAsk {
                 OutputStream out = serverSocket.getOutputStream();
                 ByteArrayOutputStream BAOS = new ByteArrayOutputStream();
                 int i;
-                while ((i = in.read()) != 10) {
+                while ((i = in.read()) != 13) {
                     BAOS.write(i);
                 }
+                //String request = "GET /ask?hostname=time.nist.gov&limit=500&port=13 HTTQ/1.1";
                 String request = BAOS.toString();
                 String[] requestArray = request.split("[ ?=&]");
-
-                // Server only handles GET requests - All others fail.
                 String host = findHost(requestArray, "hostname");
                 if (!requestArray[0].equals("GET")){
-                    System.out.println("Bad request");
-                    String errormessage = "Bad request";
-                    out.write("HTTP/1.1 400 Bad Request\r\n".getBytes());
-                    out.write(("Content-length: " + errormessage.length() + "\r\n").getBytes());
-                    out.write("Content-type: text/plain\r\n\r\n".getBytes());
-                    out.write(errormessage.getBytes());
-                    out.flush();
+                    out.write("HTTP/1.1 400 Bad Request\r\n\r\n".getBytes());
                     server.close();
                 }
                 if (!requestArray[1].equals("/ask") || host == null) {
-                    System.out.println("Object not found");
-                    String errormessage = "Object not found";
-                    out.write(("HTTP/1.1 404 Object Not Found\r\n").getBytes());
-                    out.write(("Content-length: " + errormessage.length() + "\r\n").getBytes());
-                    out.write("Content-type: text/plain\r\n\r\n".getBytes());
-                    out.write(errormessage.getBytes());
-                    out.flush();
+                    out.write(("HTTP/1.1 404 Object Not Found\r\n\r\n").getBytes());
                     server.close();
                 }
-                
+                String protocol = getProtocol(requestArray);
+                if(!protocol.equals("HTTP/1.1")){
+                    System.out.println("True");
+                    out.write("HTTP/1.1 400 Bad Request\r\n\r\n".getBytes());
+                    server.close();
+                }
+                else{
 
-                byte[] toTCPClient = byteArrayToTCPClient(requestArray, "string");
+                    
+                    byte[] toTCPClient = byteArrayToTCPClient(requestArray, "string");
 
                 Boolean shutdown = findShutdown(requestArray, "shutdown");
                 
                 Integer port = findInt(requestArray, "port");
-                
 
                 TCPClient tcpclient = new TCPClient(shutdown, findInt(requestArray, "timeout"),
                         findInt(requestArray, "limit"));
 
-                // String sent = new String(toTCPClient);
-               /*  System.out.print("Host: " + host + "\nPort: " + port + "\nShutdown: " + shutdown + "\nTimeout: "
-                        + findInt(requestArray, "timeout") + " ms"+ "\nLimit: " + findInt(requestArray, "limit") + " Bytes" +
-                        "\nSent to TCPClient: " + sent + "\n");
-                */
-                String toBrowser = new String(tcpclient.askServer(host, port, toTCPClient));
-                System.out.println("Received from TCPClient: " + toBrowser);
+                 System.out.print("Host: " + host + "\nPort: " + port + "\nShutdown: " + shutdown + "\nTimeout: "
+                        + findInt(requestArray, "timeout") + " ms"+ "\nLimit: " + findInt(requestArray, "limit") + " Bytes" + "\nProtocol: " + protocol);
+                
+                        String toBrowser = new String(tcpclient.askServer(host, port, toTCPClient));
                 out.write("HTTP/1.1 200 OK\r\n".getBytes());
                 out.write(("Content-length: " + toBrowser.length() + "\r\n").getBytes());
                 out.write("Content-type: text/plain\r\n\r\n".getBytes());
                 out.write(toBrowser.getBytes());
                 out.flush();
+                }   
             }
         }
+    }
+
+    public static String getProtocol(String[] array){
+        int i = array.length - 1;
+        String returnString = array[i];
+        return returnString;
+
     }
 
     public static byte[] byteArrayToTCPClient(String[] array, String key) {
         byte[] empty = new byte[0];
         for (int i = 0; i < array.length; i++) {
             if ((array[i].toLowerCase()).equals(key)) {
-                return array[i + 1].getBytes();
+                String send = array[i+1] + "\n";
+                return send.getBytes();
             }
         }
         return empty;
