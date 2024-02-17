@@ -38,7 +38,7 @@ public class HTTPAsk {
                 else{
 
                     
-                    byte[] toTCPClient = byteArrayToTCPClient(requestArray, "string");
+                byte[] toTCPClient = byteArrayToTCPClient(requestArray, "string");
 
                 Boolean shutdown = findShutdown(requestArray, "shutdown");
                 
